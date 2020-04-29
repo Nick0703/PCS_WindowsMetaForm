@@ -41,6 +41,8 @@
             this.btnUpdateDB = new System.Windows.Forms.Button();
             this.folderBrowserDialog2 = new System.Windows.Forms.FolderBrowserDialog();
             this.grpboxUpdate = new System.Windows.Forms.GroupBox();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.grpboxMeta.SuspendLayout();
             this.grpboxMount.SuspendLayout();
             this.grpboxUpdate.SuspendLayout();
@@ -137,7 +139,7 @@
             // 
             // btnUpdateDB
             // 
-            this.btnUpdateDB.Location = new System.Drawing.Point(191, 19);
+            this.btnUpdateDB.Location = new System.Drawing.Point(370, 19);
             this.btnUpdateDB.Name = "btnUpdateDB";
             this.btnUpdateDB.Size = new System.Drawing.Size(85, 30);
             this.btnUpdateDB.TabIndex = 2;
@@ -147,6 +149,7 @@
             // 
             // grpboxUpdate
             // 
+            this.grpboxUpdate.Controls.Add(this.progressBar1);
             this.grpboxUpdate.Controls.Add(this.btnUpdateDB);
             this.grpboxUpdate.Enabled = false;
             this.grpboxUpdate.Location = new System.Drawing.Point(12, 194);
@@ -156,6 +159,18 @@
             this.grpboxUpdate.TabStop = false;
             this.grpboxUpdate.Text = "3. Update the Database";
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(7, 22);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(357, 23);
+            this.progressBar1.TabIndex = 3;
+            // 
+            // backgroundWorker1
+            // 
+            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.BackgroundWorker1_DoWork);
+            this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.BackgroundWorker1_RunWorkerCompleted);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -164,6 +179,7 @@
             this.Controls.Add(this.grpboxUpdate);
             this.Controls.Add(this.grpboxMount);
             this.Controls.Add(this.grpboxMeta);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "Form1";
@@ -192,6 +208,8 @@
         private System.Windows.Forms.Button btnMount;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog2;
         private System.Windows.Forms.GroupBox grpboxUpdate;
+        private System.Windows.Forms.ProgressBar progressBar1;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 

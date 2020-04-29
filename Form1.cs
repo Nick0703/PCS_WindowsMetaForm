@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Data.SQLite;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace PCS_WinForm
@@ -19,7 +13,7 @@ namespace PCS_WinForm
         private static string customInstall;
         private static string new_MountPath;
         private static string dbPath;
-        private Thread DoWorkThread;
+        private static bool successChange = false;
 
         public Form1()
         {
@@ -75,7 +69,7 @@ namespace PCS_WinForm
         // Custom Mount Browse Button
         private void Button3_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Make sure to select the parent folder of the Movies and TV folders! \n(E.g. Z:, Z:\\Media or Z:\\Shared drives\\PlexCloudServers\\Media)", "Attention!");
+            MessageBox.Show("Make sure to select the parent folder of the Movies and TV folders! \n\n(E.g. Z:, Z:\\Media or Z:\\Shared drives\\PlexCloudServers\\Media)", "Attention!");
             
             // Show the Folder browse dialog and set the textbox
             if (folderBrowserDialog2.ShowDialog() == DialogResult.OK)
@@ -83,9 +77,9 @@ namespace PCS_WinForm
                 txtMountPath.Text = folderBrowserDialog2.SelectedPath;
             }
 
-            // Make sure that the user's path ends with '\'
+            // Make sure that the user's mount path ends with '\'
             new_MountPath = txtMountPath.Text;
-            if (!new_MountPath.EndsWith(@"\"))
+            if (!new_MountPath.EndsWith(@"\") && (!new_MountPath.Contains("Click the Browse button.")))
             {
                 new_MountPath += @"\";
                 txtMountPath.Text = new_MountPath;
@@ -95,35 +89,22 @@ namespace PCS_WinForm
         // Mount Path TextBox
         private void TextBox2_TextChanged(object sender, EventArgs e)
         {
-            // Enable the Update groupbox
-            grpboxUpdate.Enabled = true;
+            if (!txtMountPath.Text.Contains("Click the Browse button.") || !txtMountPath.Text.Contains(@"Click the Browse button.\"))
+                // Enable the Update groupbox
+                grpboxUpdate.Enabled = true;
         }
 
         // Update DB Button
         private void BtnUpdateDB_Click(object sender, EventArgs e)
         {
-            DoWorkThread = new Thread(new ThreadStart(DoWork))
-            {
-                IsBackground = true
-            };
-            DoWorkThread.Start();
+            // Set the progress bar to 60%
+            progressBar1.Value = 60;
+
+            // Run the SQL update query in the background
+            backgroundWorker1.RunWorkerAsync();
         }
 
-        private void DoWork()
-        { // This void contains action that will be performed by thread
-          //TODO: Background processing. To update UI from another thread use Control.Invoke(...)
-            SQLiteConnection sqlite_conn = CreateConnection(dbPath);           
-
-            if (UpdateMount(sqlite_conn, new_MountPath) != 0)
-            {
-                MessageBox.Show("Successfully updated the database.", "Success!");
-            }
-            else
-            {
-                MessageBox.Show("No changes made, it's probably updated already.", "Well then...");
-            }
-        }
-
+        // Create the SQL Connection
         private SQLiteConnection CreateConnection(string dbPath)
         {
             string connString = string.Format("Data Source={0}", dbPath);
@@ -137,14 +118,13 @@ namespace PCS_WinForm
             }
             catch (Exception)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\nUnable to open the database\n");
-                Console.ResetColor();
+                MessageBox.Show("Unable to open the database.", "Error!");
             }
 
             return sqlite_conn;
         }
 
+        // Execute the SQL update query
         private int UpdateMount(SQLiteConnection conn, string new_path)
         {
             int queryCount;
@@ -174,6 +154,36 @@ namespace PCS_WinForm
             queryCount += command.ExecuteNonQuery();
 
             return queryCount;
+        }
+
+        // Background Worker DoWork
+        private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            SQLiteConnection sqlite_conn = CreateConnection(dbPath);
+
+            if (UpdateMount(sqlite_conn, new_MountPath) != 0)
+            {
+                successChange = true;
+            }
+            else
+            {
+                successChange = false;
+            }
+        }
+
+        // Background Worker Completed
+        private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            progressBar1.Value = 100;
+            
+            if (successChange)
+            {
+                MessageBox.Show("Successfully updated the database.", "Success!");
+            } 
+            else
+            {
+                MessageBox.Show("No changes made, it's probably updated already.", "Well then...");
+            }
         }
     }
 }
