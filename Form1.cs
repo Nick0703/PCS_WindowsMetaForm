@@ -185,5 +185,106 @@ namespace PCS_WinForm
                 MessageBox.Show("No changes made, it's probably updated already.", "Well then...");
             }
         }
+
+        // Select the custom meta path (Date Fix)
+        private void button1_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(@"Make sure to select the root folder only! (E.g. D:\Plex Media Server)", "Attention!");
+            // Show the Folder browse dialog and set the textbox
+            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+            {
+                txtDateCustom.Text = folderBrowserDialog1.SelectedPath;
+            }
+        }
+
+        // Default Install (Date Fix)
+        private void rdDateDefault_CheckedChanged(object sender, EventArgs e)
+        {
+            // Clear the custom path field and disable the browse button
+            txtDateCustom.Enabled = false;
+            btnDateBrowse.Enabled = false;
+
+            btnFixDate.Enabled = true;
+
+            pmsInstall = Environment.ExpandEnvironmentVariables(pmsInstall);
+            pmsDd = Environment.ExpandEnvironmentVariables(pmsDd);
+            dbPath = Path.Combine(pmsInstall, pmsDd);
+        }
+
+        // Custom Install (Date Fix)
+        private void rdCustomDate_CheckedChanged(object sender, EventArgs e)
+        {
+            // Enable the browse button and the textbox
+            txtDateCustom.Enabled = true;
+            btnDateBrowse.Enabled = true;
+        }
+
+        // TextBox Install Path (Date Fix)
+        private void txtDateCustom_TextChanged(object sender, EventArgs e)
+        {
+            customInstall = txtDateCustom.Text;
+            customInstall = Environment.ExpandEnvironmentVariables(customInstall);
+            pmsDd = Environment.ExpandEnvironmentVariables(pmsDd);
+            dbPath = Path.Combine(customInstall, pmsDd);
+
+            btnFixDate.Enabled = true;
+        }
+
+        // Fix the Date Button (Date Fix)
+        private void btnFixDate_Click(object sender, EventArgs e)
+        {
+            // Set the progress bar to 60%
+            progressBar2.Value = 60;
+
+            // Run the SQL update query in the background
+            backgroundWorker2.RunWorkerAsync();
+        }
+
+        // Background Worker DoWork (Date Fix)
+        private void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
+        {
+            SQLiteConnection sqlite_conn = CreateConnection(dbPath);
+
+            if (FixDate(sqlite_conn) != 0)
+            {
+                successChange = true;
+            }
+            else
+            {
+                successChange = false;
+            }
+        }
+
+        // Fix the date in the DB (Date Fix)
+        private int FixDate(SQLiteConnection conn)
+        {
+            int queryCount;
+            SQLiteCommand command = conn.CreateCommand();
+
+            command.CommandText = "UPDATE metadata_items SET added_at = updated_at WHERE DATETIME(added_at) > DATETIME('now')";
+            queryCount = command.ExecuteNonQuery();
+
+            if (chkBoxCreateDate.Checked)
+            {
+                command.CommandText = "UPDATE metadata_items SET created_at = originally_available_at WHERE DATETIME(created_at) > DATETIME('now');";
+                queryCount += command.ExecuteNonQuery();
+            }
+
+            return queryCount;
+        }
+
+        private void backgroundWorker2_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            progressBar2.Value = 100;
+
+            if (successChange)
+            {
+                MessageBox.Show("Successfully fix the date issues in the database.", "Success!");
+            }
+            else
+            {
+                MessageBox.Show("No changes made, it's probably updated already.", "Well then...");
+            }
+        }
     }
 }
