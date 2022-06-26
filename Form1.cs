@@ -135,11 +135,17 @@ namespace PCS_WinForm
             string url_path = @"file://P:\Shared drives\PlexCloudServers\Media\";
             string url_path_like = @"%file://P:\Shared drives\PlexCloudServers\Media\%";
 
+            command.CommandText = "DROP TRIGGER fts4_metadata_titles_before_update_icu";
+            queryCount = command.ExecuteNonQuery();
+
+            command.CommandText = "DROP TRIGGER fts4_metadata_titles_after_update_icu";
+            queryCount += command.ExecuteNonQuery();
+
             command.CommandText = "UPDATE section_locations SET root_path = replace(root_path, @root_path, @new_path) WHERE root_path LIKE @root_path_like";
             command.Parameters.Add(new SQLiteParameter("@root_path", root_path));
             command.Parameters.Add(new SQLiteParameter("@new_path", new_path));
             command.Parameters.Add(new SQLiteParameter("@root_path_like", root_path_like));
-            queryCount = command.ExecuteNonQuery();
+            queryCount += command.ExecuteNonQuery();
 
             command.CommandText = "UPDATE media_streams SET url = replace(url, @url_path, @new_path) WHERE url LIKE @url_path_like";
             command.Parameters.Add(new SQLiteParameter("@url_path", url_path));
@@ -151,6 +157,12 @@ namespace PCS_WinForm
             command.Parameters.Add(new SQLiteParameter("@root_path", root_path));
             command.Parameters.Add(new SQLiteParameter("@new_path", new_path));
             command.Parameters.Add(new SQLiteParameter("@root_path_like", root_path_like));
+            queryCount += command.ExecuteNonQuery();
+
+            command.CommandText = "CREATE TRIGGER fts4_metadata_titles_before_update_icu BEFORE UPDATE ON metadata_items BEGIN DELETE FROM fts4_metadata_titles_icu WHERE docid=old.rowid; END;";
+            queryCount += command.ExecuteNonQuery();
+
+            command.CommandText = "DCREATE TRIGGER fts4_metadata_titles_after_update_icu AFTER UPDATE ON metadata_items BEGIN INSERT INTO fts4_metadata_titles_icu(docid, title, title_sort, original_title) VALUES(new.rowid, new.title, new.title_sort, new.original_title); END;";
             queryCount += command.ExecuteNonQuery();
 
             return queryCount;
@@ -261,14 +273,26 @@ namespace PCS_WinForm
             int queryCount;
             SQLiteCommand command = conn.CreateCommand();
 
-            command.CommandText = "UPDATE metadata_items SET added_at = updated_at WHERE DATETIME(added_at) > DATETIME('now')";
+            command.CommandText = "DROP TRIGGER fts4_metadata_titles_before_update_icu";
             queryCount = command.ExecuteNonQuery();
+
+            command.CommandText = "DROP TRIGGER fts4_metadata_titles_after_update_icu";
+            queryCount += command.ExecuteNonQuery();
+
+            command.CommandText = "UPDATE metadata_items SET added_at = updated_at WHERE DATETIME(added_at) > DATETIME('now')";
+            queryCount += command.ExecuteNonQuery();
 
             if (chkBoxCreateDate.Checked)
             {
                 command.CommandText = "UPDATE metadata_items SET created_at = originally_available_at WHERE DATETIME(created_at) > DATETIME('now');";
                 queryCount += command.ExecuteNonQuery();
             }
+
+            command.CommandText = "CREATE TRIGGER fts4_metadata_titles_before_update_icu BEFORE UPDATE ON metadata_items BEGIN DELETE FROM fts4_metadata_titles_icu WHERE docid=old.rowid; END;";
+            queryCount += command.ExecuteNonQuery();
+
+            command.CommandText = "DCREATE TRIGGER fts4_metadata_titles_after_update_icu AFTER UPDATE ON metadata_items BEGIN INSERT INTO fts4_metadata_titles_icu(docid, title, title_sort, original_title) VALUES(new.rowid, new.title, new.title_sort, new.original_title); END;";
+            queryCount += command.ExecuteNonQuery();
 
             return queryCount;
         }
